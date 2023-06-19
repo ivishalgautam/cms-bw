@@ -124,6 +124,10 @@ const ClientSchema = new mongoose.Schema(
         },
       },
     },
+    paid: {
+      type: Boolean,
+      default: false,
+    },
   },
   { timestamps: true }
 );

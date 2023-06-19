@@ -184,7 +184,7 @@ cron.schedule("0 0 * * *", async () => {
 });
 
 // run every minute
-// cron.schedule("* * * * *", async () => {
+// cron.schedule("*/10 * * * * *", async () => {
 //   await checkExpirationsAndSendEmails();
 // });
 
