@@ -84,14 +84,10 @@ const schema = Joi.object({
       url: Joi.string().allow(""),
     }),
   }),
-  files: Joi.object({
-    filename: Joi.string().required(),
-    data: Joi.binary().required(),
-    contentType: Joi.string().required(),
-  }),
   pricing: Joi.object({
     basePrice: Joi.number().required(),
     additionalCosts: Joi.number().required(),
+    partialPaid: Joi.number().required(),
     totalCost: Joi.number().required(),
   }).required(),
   isDisabled: Joi.boolean().default(false),
@@ -192,7 +188,6 @@ cron.schedule("0 0 * * *", async () => {
 router.post("/", uploads.array("files", 5), async (req, res) => {
   const clientData = req.body.clientData;
   const parsedData = JSON.parse(clientData);
-  // console.log(parsedData);
   const { error } = schema.validate(parsedData);
 
   if (error) {
@@ -200,12 +195,21 @@ router.post("/", uploads.array("files", 5), async (req, res) => {
   }
 
   try {
-    const { clientDetails, projectDetails, domain, hosting, socials, pricing } =
-      parsedData;
+    const {
+      clientDetails,
+      projectDetails,
+      domain,
+      hosting,
+      socials,
+      pricing,
+      AMC,
+      payment,
+    } = parsedData;
     const files = req.files.map((file) => ({
       filename: file.originalname,
       path: `${currentRootDirectoryName}/uploads/${file.filename}`,
     }));
+    // console.log(files);
     const client = new Client({
       clientDetails,
       projectDetails,
@@ -214,9 +218,18 @@ router.post("/", uploads.array("files", 5), async (req, res) => {
       socials,
       files,
       pricing,
+      AMC,
+      payment,
     });
-    await client.save();
+    console.log(files);
+    if (client?.pricing?.partialPaid !== 0) {
+      client.payment = "Partial Paid";
+    }
+    if (client?.pricing?.totalCost === 0) {
+      client.payment = "Received";
+    }
 
+    await client.save();
     res.json(client);
   } catch (error) {
     res.status(500).json({ error: error.message });
@@ -245,6 +258,17 @@ router.put("/:id", async (req, res) => {
       { $set: req.body },
       { new: true }
     );
+    // console.log(client?.pricing?.additionalCosts);
+    if (client?.pricing?.partialPaid !== 0) {
+      client.payment = "Partial Paid";
+    }
+    if (client?.pricing?.partialPaid <= 0) {
+      client.payment = "Pending";
+    }
+    if (client?.pricing?.totalCost === 0) {
+      client.payment = "Received";
+    }
+    await client.save();
     res.json(client);
   } catch (error) {
     res.status(500).json({ error: error.message });

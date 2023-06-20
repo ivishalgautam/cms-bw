@@ -118,15 +118,20 @@ const ClientSchema = new mongoose.Schema(
           type: Number,
           default: 0,
         },
+        partialPaid: {
+          type: Number,
+          default: 0,
+        },
         totalCost: {
           type: Number,
           required: true,
         },
       },
     },
-    paid: {
-      type: Boolean,
-      default: false,
+    payment: {
+      type: String,
+      enum: ["Received", "Partial Paid", "Pending"],
+      default: "Pending",
     },
   },
   { timestamps: true }
